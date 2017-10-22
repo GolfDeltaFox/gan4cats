@@ -2,39 +2,16 @@ import tensorflow as tf
 import numpy as np
 import datetime
 from skimage.io import imsave
-import matplotlib.pyplot as plt
+# import matplotlib.pyplot as plt
 
 from os import listdir
 from os.path import isfile, join
-import scipy
 import math
 from os import path
+import utils
 
-class Dataset():
-    def __init__(self, data, one_hot=False):
-        self._len = len(data)
-        self._cur = 0
-        if one_hot:
-            data = np.array(data).reshape([data.shape[0], -1])
-        self.data = np.array(data)
+from dataset import Dataset
 
-    def next_batch(self, batch_size):
-        if self._cur + batch_size > self._len:
-            res = np.append(self.data[self._cur:],self.data[:batch_size-(self._len-self._cur)], axis=0)
-            self._cur = self._len-self._cur
-        else:
-            res = self.data[self._cur:self._cur+batch_size]
-            self._cur = self._cur+batch_size
-        return np.array(res, dtype='f')
-
-def get_images_dataset(path, grey_scale=False):
-    images =[]
-    for file in listdir(path):
-        image_path = join(path, file)
-        if isfile(image_path):
-            image = scipy.ndimage.imread(image_path, flatten=grey_scale)
-            images.append(image/256)
-    return Dataset(images)
 
 # Load MNIST data
 from tensorflow.examples.tutorials.mnist import input_data
@@ -132,13 +109,12 @@ def show_result(batch_res, fname, grid_size=(8, 8), img_size=(28,28), grid_pad=5
     big_pic_reshaped = big_pic.reshape([big_pic.shape[0], big_pic.shape[1],nb_channel])
 
     # plt.imsave(fname, big_pic_reshaped, cmap='Greys')
-    plt.imsave(fname, big_pic_reshaped)
+    imsave(fname, big_pic_reshaped)
 
 
 # mnist = input_data.read_data_sets("MNIST_data/")
-dataset = get_images_dataset('../../../datasets/images/cats/64x64_rgb/')
-
-model_name = 'jon_rgb'
+dataset = Dataset.get_images('../../datasets/images/cats/64x64_rgb/')
+model_name = 'gan4cats'
 z_dimensions = 100
 batch_size = 50
 image_height = 64
@@ -201,13 +177,13 @@ checkpoint_file = "./checkpoints/"+model_name+".ckpt"
 sess.run(tf.global_variables_initializer())
 
 # # Pre-train discriminator
-for i in range(300):
-    z_batch = np.random.normal(0, 1, size=[batch_size, z_dimensions])
-    # real_image_batch = mnist.train.next_batch(batch_size)[0].reshape([batch_size, 28, 28, 1])
-    real_image_batch = dataset.next_batch(batch_size).reshape([batch_size, image_height, image_width, nb_channel])
-    _, __, dLossReal, dLossFake = sess.run([d_trainer_real, d_trainer_fake, d_loss_real, d_loss_fake],
-                                           {x_placeholder: real_image_batch, z_placeholder: z_batch})
-    print('dLossReal: '+str(dLossReal)+'  ,  dLossFake: '+str(dLossFake))
+# for i in range(300):
+#     z_batch = np.random.normal(0, 1, size=[batch_size, z_dimensions])
+#     # real_image_batch = mnist.train.next_batch(batch_size)[0].reshape([batch_size, 28, 28, 1])
+#     real_image_batch = dataset.next_batch(batch_size).reshape([batch_size, image_height, image_width, nb_channel])
+#     _, __, dLossReal, dLossFake = sess.run([d_trainer_real, d_trainer_fake, d_loss_real, d_loss_fake],
+#                                            {x_placeholder: real_image_batch, z_placeholder: z_batch})
+#     print('dLossReal: '+str(dLossReal)+'  ,  dLossFake: '+str(dLossFake))
 
 # Train generator and discriminator together
 for i in range(100000):
@@ -237,3 +213,5 @@ for i in range(100000):
         images = sess.run(Gz, {z_placeholder: z_batch})
         show_result(images, "./output/step_%s.jpg" %i, img_size=(image_height, image_width), nb_channel=nb_channel)
         save_path = saver.save(sess, checkpoint_file)
+    if i % 100 == 0:
+        utils.save_on_s3(model_name, save_path)
