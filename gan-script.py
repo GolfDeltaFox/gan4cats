@@ -121,6 +121,7 @@ image_height = 64
 image_width = 64
 nb_channel = 3
 img_size = image_width*image_height*nb_channel
+save_image_grid = False
 
 z_placeholder = tf.placeholder(tf.float32, [None, z_dimensions], name='z_placeholder')
 # z_placeholder is for feeding input noise to the generator
@@ -171,19 +172,19 @@ tf.summary.image('Generated_images', images_for_tensorboard, 5)
 merged = tf.summary.merge_all()
 logdir = "tensorboard/" + datetime.datetime.now().strftime("%Y%m%d-%H%M%S") + "/"
 writer = tf.summary.FileWriter(logdir, sess.graph)
-
-checkpoint_file = "./checkpoints/"+model_name+".ckpt"
+checkpoint_dir = './checkpoints/'
+checkpoint_file = join( checkpoint_dir, model_name+".ckpt")
 
 sess.run(tf.global_variables_initializer())
 
 # # Pre-train discriminator
-# for i in range(300):
-#     z_batch = np.random.normal(0, 1, size=[batch_size, z_dimensions])
-#     # real_image_batch = mnist.train.next_batch(batch_size)[0].reshape([batch_size, 28, 28, 1])
-#     real_image_batch = dataset.next_batch(batch_size).reshape([batch_size, image_height, image_width, nb_channel])
-#     _, __, dLossReal, dLossFake = sess.run([d_trainer_real, d_trainer_fake, d_loss_real, d_loss_fake],
-#                                            {x_placeholder: real_image_batch, z_placeholder: z_batch})
-#     print('dLossReal: '+str(dLossReal)+'  ,  dLossFake: '+str(dLossFake))
+for i in range(300):
+    z_batch = np.random.normal(0, 1, size=[batch_size, z_dimensions])
+    # real_image_batch = mnist.train.next_batch(batch_size)[0].reshape([batch_size, 28, 28, 1])
+    real_image_batch = dataset.next_batch(batch_size).reshape([batch_size, image_height, image_width, nb_channel])
+    _, __, dLossReal, dLossFake = sess.run([d_trainer_real, d_trainer_fake, d_loss_real, d_loss_fake],
+                                           {x_placeholder: real_image_batch, z_placeholder: z_batch})
+    print('dLossReal: '+str(dLossReal)+'  ,  dLossFake: '+str(dLossFake))
 
 # Train generator and discriminator together
 for i in range(100000):
@@ -206,12 +207,11 @@ for i in range(100000):
         z_batch = np.random.normal(0, 1, size=[batch_size, z_dimensions])
         summary = sess.run(merged, {z_placeholder: z_batch, x_placeholder: real_image_batch})
         writer.add_summary(summary, i)
+        if save_image_grid:
+            z_batch = np.random.normal(0, 1, size=[64, z_dimensions])
+            images = sess.run(Gz, {z_placeholder: z_batch})
+            show_result(images, "./output/step_%s.jpg" %i, img_size=(image_height, image_width), nb_channel=nb_channel)
 
-
-        z_batch = np.random.normal(0, 1, size=[64, z_dimensions])
-        # images = sess.run(Gz, {z_placeholder: z_batch})
-        images = sess.run(Gz, {z_placeholder: z_batch})
-        show_result(images, "./output/step_%s.jpg" %i, img_size=(image_height, image_width), nb_channel=nb_channel)
-        save_path = saver.save(sess, checkpoint_file)
-    if i % 100 == 0:
-        utils.save_on_s3(model_name, save_path)
+    if i % 1000 == 0:
+        saver.save(sess, checkpoint_file)
+        utils.save_on_s3(model_name, checkpoint_dir)
