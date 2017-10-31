@@ -1,5 +1,5 @@
 import numpy as np
-from os import listdir
+from os import listdir, walk
 from os.path import isfile, join
 import scipy
 
@@ -23,9 +23,9 @@ class Dataset():
     @classmethod
     def get_images(cls, path, grey_scale=False):
         images =[]
-        for file in listdir(path):
-            image_path = join(path, file)
-            if isfile(image_path):
+        for dir_path, _, files in walk(path):
+            for afile in files:
+                image_path = join(dir_path, afile)
                 image = scipy.ndimage.imread(image_path, flatten=grey_scale)
                 images.append(image/256)
         return cls(images)

@@ -1,1 +1,6 @@
 ./output
+./tensorboard
+./checkpoints
+./datasets
+__pycache__
+.env

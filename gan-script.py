@@ -11,7 +11,10 @@ from os import path
 import utils
 
 from dataset import Dataset
+from config import dataset_name
+from initialize import initialize_env
 
+initialize_env()
 
 # Load MNIST data
 from tensorflow.examples.tutorials.mnist import input_data
@@ -113,7 +116,7 @@ def show_result(batch_res, fname, grid_size=(8, 8), img_size=(28,28), grid_pad=5
 
 
 # mnist = input_data.read_data_sets("MNIST_data/")
-dataset = Dataset.get_images('../../datasets/images/cats/64x64_rgb/')
+dataset = Dataset.get_images('./datasets/'+dataset_name)
 model_name = 'gan4cats'
 z_dimensions = 100
 batch_size = 50
