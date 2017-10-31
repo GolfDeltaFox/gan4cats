@@ -11,14 +11,13 @@ from os import path
 import utils
 
 from dataset import Dataset
-from config import dataset_name
+from config import dataset_name, model_name
 from initialize import initialize_env
 
 initialize_env()
 
 # Load MNIST data
 from tensorflow.examples.tutorials.mnist import input_data
-
 
 # Define the discriminator network
 def discriminator(images, reuse_variables=None):
@@ -117,7 +116,7 @@ def show_result(batch_res, fname, grid_size=(8, 8), img_size=(28,28), grid_pad=5
 
 # mnist = input_data.read_data_sets("MNIST_data/")
 dataset = Dataset.get_images('./datasets/'+dataset_name)
-model_name = 'gan4cats'
+#model_name = 'gan4cats'
 z_dimensions = 100
 batch_size = 50
 image_height = 64
@@ -180,14 +179,16 @@ checkpoint_file = join( checkpoint_dir, model_name+".ckpt")
 
 sess.run(tf.global_variables_initializer())
 
-# # Pre-train discriminator
-for i in range(300):
-    z_batch = np.random.normal(0, 1, size=[batch_size, z_dimensions])
-    # real_image_batch = mnist.train.next_batch(batch_size)[0].reshape([batch_size, 28, 28, 1])
-    real_image_batch = dataset.next_batch(batch_size).reshape([batch_size, image_height, image_width, nb_channel])
-    _, __, dLossReal, dLossFake = sess.run([d_trainer_real, d_trainer_fake, d_loss_real, d_loss_fake],
-                                           {x_placeholder: real_image_batch, z_placeholder: z_batch})
-    print('dLossReal: '+str(dLossReal)+'  ,  dLossFake: '+str(dLossFake))
+if path.isfile(checkpoint_file):
+    saver.restore(sess, checkpoint_file)
+else:
+    # # Pre-train discriminator
+    for i in range(1):
+        z_batch = np.random.normal(0, 1, size=[batch_size, z_dimensions])
+        real_image_batch = dataset.next_batch(batch_size).reshape([batch_size, image_height, image_width, nb_channel])
+        _, __, dLossReal, dLossFake = sess.run([d_trainer_real, d_trainer_fake, d_loss_real, d_loss_fake],
+                                               {x_placeholder: real_image_batch, z_placeholder: z_batch})
+        print('dLossReal: '+str(dLossReal)+'  ,  dLossFake: '+str(dLossFake))
 
 # Train generator and discriminator together
 for i in range(100000):
@@ -218,3 +219,4 @@ for i in range(100000):
     if i % 1000 == 0:
         saver.save(sess, checkpoint_file)
         utils.save_on_s3(model_name, checkpoint_dir)
+        utils.save_on_s3(model_name, logdir)
