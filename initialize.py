@@ -7,15 +7,16 @@ import requests
 def get_archive_and_extract(path, file_name, s3_bucket_name, extension='.tar.gz'):
     if not os.path.exists(path):
         # os.makedirs(path)
-        full_path = os.path.join(path, file_name+extension)
+        full_path = os.path.join(path, file_name+extension).strip('./')
         print('Downloading: '+s3_bucket_name+full_path)
         try:
             s3_data = conn.get(full_path, s3_bucket_name)
             print('Extracting: '+str(file_name+extension)+' to '+str(path))
             tar_file_like = io.BytesIO(s3_data.content)
             tar_obj = tarfile.open(fileobj=tar_file_like)
-            tar_obj.extractall(path=path+dataset_name)
-        except requests.exceptions.HTTPError:
+            tar_obj.extractall(path=os.path.join(path,dataset_name))
+        except requests.exceptions.HTTPError as e:
+            print(e)
             print('No such ressource on s3. Starting over.')
             os.makedirs(path)
     else:
