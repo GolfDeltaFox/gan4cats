@@ -10,4 +10,4 @@ RUN mkdir -p ./tensorboard
 
 EXPOSE 6006
 
-CMD tensorboard --logdir=./tensorboard && python3 gan-script.py
+CMD tensorboard --logdir=./tensorboard & python3 gan-script.py

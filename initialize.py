@@ -22,7 +22,7 @@ def get_archive_and_extract(path, file_name, s3_bucket_name, extension='.tar.gz'
         print(path+' already exists.')
 
 def initialize(dataset_name, model_name, s3_bucket_name):
-    get_archive_and_extract('./datasets', model_name, s3_bucket_name)
+    get_archive_and_extract('./datasets', dataset_name, s3_bucket_name)
     get_archive_and_extract('./checkpoints', model_name, s3_bucket_name)
 
 def initialize_env():
