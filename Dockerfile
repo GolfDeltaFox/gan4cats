@@ -6,8 +6,8 @@ WORKDIR /app
 
 RUN pip3 install -r requirements.txt
 RUN mkdir -p ./tensorboard
-RUN tensorboard --logdir=./tensorboard &
+#RUN tensorboard --logdir=./tensorboard &
 
 EXPOSE 6006
 
-CMD python3 gan-script.py
+CMD tensorboard --logdir=./tensorboard && python3 gan-script.py
